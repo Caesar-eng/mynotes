@@ -1,6 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:mynotes/constatns/routes.dart';
+import 'package:mynotes/services/auth/auth_excceptions.dart';
+import 'package:mynotes/services/auth/auth_services.dart';
 import 'package:mynotes/utilities/show_error_dialog.dart';
 
 class LoginView extends StatefulWidget {
@@ -59,12 +60,12 @@ class _LoginViewState extends State<LoginView> {
               final password = _password.text;
 
               try {
-                await FirebaseAuth.instance.signInWithEmailAndPassword(
+                await AuthService.firebase().logIn(
                   email: email,
                   password: password,
                 );
-                final user = FirebaseAuth.instance.currentUser;
-                if (user?.emailVerified ?? false) {
+                final user = AuthService.firebase().currentUser;
+                if (user?.isEmailVerified ?? false) {
                   //Email is verified
                   Navigator.of(context).pushNamedAndRemoveUntil(
                     notesRoute,
@@ -77,22 +78,15 @@ class _LoginViewState extends State<LoginView> {
                     (route) => false,
                   );
                 }
-              } on FirebaseAuthException catch (e) {
-                if (e.code == 'invalid-credential') {
-                  await showErrorDialog(
-                    context,
-                    'Email or Password are wrong',
-                  );
-                } else {
-                  await showErrorDialog(
-                    context,
-                    'Error ${e.code}',
-                  );
-                }
-              } catch (e) {
+              } on WrongPasswordOrEmailAuthException {
                 await showErrorDialog(
                   context,
-                  e.toString(),
+                  'Email or Password are wrong',
+                );
+              } on GenericAuthException {
+                await showErrorDialog(
+                  context,
+                  'Authintication error',
                 );
               }
             },
